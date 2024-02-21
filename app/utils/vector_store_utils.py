@@ -11,3 +11,11 @@ class MyVectorStore:
         Chroma.from_texts(
             text_chunks, self.embeddings, persist_directory="../data/chroma_db"
         )
+
+    def get_retriever(self):
+        # load from disk
+        vector_store = Chroma(
+            persist_directory="../data/chroma_db", embedding_function=self.embeddings
+        )
+        retriever = vector_store.as_retriever(search_kwargs={"k": 2})
+        return retriever
