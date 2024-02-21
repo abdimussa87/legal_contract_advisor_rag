@@ -1,0 +1,4 @@
+{
+  "python.defaultInterpreterPath": "/Users/abdi/miniconda3/envs/legal_contract_advisor/bin/python",
+  "cSpell.words": ["langchain", "vectorstores"]
+}
