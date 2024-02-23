@@ -7,7 +7,7 @@ class MyTextSplitter:
 
     def get_text_chunks(self):
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000, chunk_overlap=200, length_function=len
+            chunk_size=1024, chunk_overlap=200, length_function=len
         )
         chunks = text_splitter.split_text(self.text)
         return chunks
