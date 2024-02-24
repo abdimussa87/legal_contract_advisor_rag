@@ -6,7 +6,8 @@ from utils.pdf_utils import MyPDF
 from utils.text_splitter_utils import MyTextSplitter
 from utils.vector_store_utils import MyVectorStore
 from utils.langchain_utils import MyLangChain
-import json
+
+load_dotenv(override=True)
 
 
 def get_conversation_chain(retriever):
@@ -22,13 +23,11 @@ def handle_userinput(user_question):
     result = st.session_state.conversation.invoke(
         {
             "user_prompt": user_question,
-            "num_of_prompts_to_generate": 5,
         }
     )
-    prompts_generated = json.loads(result["response"].content)
+    answer = result["response"].content
 
-    for message in prompts_generated:
-        st.write(bot_template.replace("{{MSG}}", message), unsafe_allow_html=True)
+    st.write(bot_template.replace("{{MSG}}", answer), unsafe_allow_html=True)
 
 
 def main():
