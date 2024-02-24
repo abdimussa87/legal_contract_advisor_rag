@@ -11,12 +11,12 @@ from langchain.schema.runnable import (
 
 class MyLangChain:
     def generate_answer_chain(self, base_retriever):
-        template = """ Answer the following question based only on the provided context:
+        template = """Act as a legal contract answering expert. You will be presented with a legal contract as context and a question related to that contract. Your task is to provide a succinct answer to the question based on the content of the contract. Make sure you reply with "I don't know" if the answer cannot be found in the context.
         ### CONTEXT
         {context}
 
-        ### User Prompt
-        User Prompt: {user_prompt}
+        ### Question
+        Question: {user_prompt}
         """
 
         prompt = ChatPromptTemplate.from_template(template)
