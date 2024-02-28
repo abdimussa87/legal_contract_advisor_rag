@@ -7,31 +7,31 @@ from langchain.schema.runnable import (
     RunnablePassthrough,
     RunnableParallel,
 )
+from langchain.prompts import PromptTemplate
+from langchain_community.chat_models import ChatOllama
 
 
 class MyLangChain:
-    def generate_answer_chain(self, base_retriever):
-        template = """Act as a legal contract answering expert. You will be presented with a legal contract as context and a question related to that contract. Your task is to provide a succinct answer to the question based on the content of the contract. Make sure you reply with "I don't know" if the answer cannot be found in the context.
-        ### CONTEXT
-        {context}
 
-        ### Question
-        Question: {user_prompt}
-        """
+    def __init__(self) -> None:
+        self.prompt = PromptTemplate(
+            template="""Act as a legal contract answering expert. You will be presented with a legal contract as context and a question related to that contract. Your task is to provide a succinct answer to the question based on the content of the contract. Make sure you reply with "I don't know" if the answer cannot be found in the context.
+            ### CONTEXT
+            {context}
 
-        prompt = ChatPromptTemplate.from_template(template)
-
-        primary_qa_llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
-
-        retriever = RunnableParallel(
-            {
-                "context": itemgetter("user_prompt") | base_retriever,
-                "user_prompt": itemgetter("user_prompt"),
-            }
+            ### Question
+            Question: {question}""",
+            input_variables=["context", "question"],
         )
 
-        retrieval_augmented_qa_chain = retriever | {
-            "response": prompt | primary_qa_llm,
-            "context": itemgetter("context"),
-        }
-        return retrieval_augmented_qa_chain
+        local_llm = "mistral:instruct"
+        self.llm = ChatOllama(model=local_llm, temperature=0)
+
+    def generate_answer_chain(self, retriever):
+        chain = (
+            {"context": retriever, "question": RunnablePassthrough()}
+            | self.prompt
+            | self.llm
+            | StrOutputParser()
+        )
+        return chain
