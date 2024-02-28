@@ -12,20 +12,25 @@ load_dotenv(override=True)
 
 def get_conversation_chain(retriever):
     my_lang_chain = MyLangChain()
-    return my_lang_chain.generate_answer_chain(base_retriever=retriever)
+    return my_lang_chain.generate_answer_chain(retriever)
 
 
 def handle_userinput(user_question):
+    # a path which may happen if the document has already been embedded
     if not st.session_state.conversation:
-        st.error(f"Please enter document")
-        return
+        my_vector_store = MyVectorStore()
+        try:
+            retriever = my_vector_store.get_retriever()
+        except Exception:
+            st.error(f"Please enter document")
+            return
 
-    result = st.session_state.conversation.invoke(
-        {
-            "user_prompt": user_question,
-        }
+        # create conversation chain
+        st.session_state.conversation = get_conversation_chain(retriever)
+
+    answer = st.session_state.conversation.invoke(
+        user_question,
     )
-    answer = result["response"].content
 
     st.write(bot_template.replace("{{MSG}}", answer), unsafe_allow_html=True)
 
@@ -54,15 +59,15 @@ def main():
             with st.spinner("Processing"):
                 # get pdf text
                 pdf = MyPDF(pdf=pdf_docs)
-                raw_text = pdf.get_pdf_text()
+                docs = pdf.get_pdf_docs()
 
                 # get the text chunks
-                text_splitter = MyTextSplitter(raw_text)
+                text_splitter = MyTextSplitter(docs)
                 text_chunks = text_splitter.get_text_chunks()
 
                 # create vector store
                 my_vector_store = MyVectorStore()
-                my_vector_store.embed_text(text_chunks)
+                my_vector_store.embed_docs(text_chunks)
                 retriever = my_vector_store.get_retriever()
 
                 # create conversation chain
