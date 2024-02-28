@@ -1,21 +1,27 @@
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
+from langchain.embeddings.huggingface import HuggingFaceBgeEmbeddings
+from langchain_community.vectorstores.faiss import FAISS
 
 
 class MyVectorStore:
     def __init__(self):
-        self.embeddings = OpenAIEmbeddings()
-        pass
+        model_name = "BAAI/bge-m3"
+        encode_kwargs = {
+            "normalize_embeddings": True
+        }  # set True to compute cosine similarity
 
-    def embed_text(self, text_chunks):
-        Chroma.from_texts(
-            text_chunks, self.embeddings, persist_directory="../data/chroma_db"
+        self.embedding_function = HuggingFaceBgeEmbeddings(
+            model_name=model_name,
+            # model_kwargs={'device': 'cuda'},
+            encode_kwargs=encode_kwargs,
         )
+
+    def embed_docs(self, chunks):
+        db = FAISS.from_documents(chunks, self.embedding_function)
+        db.save_local("../data/faiss_index")
 
     def get_retriever(self):
-        # load from disk
-        vector_store = Chroma(
-            persist_directory="../data/chroma_db", embedding_function=self.embeddings
-        )
-        retriever = vector_store.as_retriever(search_kwargs={"k": 20})
+        vector_store = FAISS.load_local("../data/faiss_index", self.embedding_function)
+        retriever = vector_store.as_retriever(search_kwargs={"k": 2})
         return retriever
