@@ -68,7 +68,14 @@ def main():
                 # create vector store
                 my_vector_store = MyVectorStore()
                 my_vector_store.embed_docs(text_chunks)
-                retriever = my_vector_store.get_retriever()
+
+                # retriever = my_vector_store.get_retriever()
+
+                retriever = my_vector_store.get_parent_document_retriever(
+                    parent_splitter=text_splitter.get_parent_splitter(),
+                    child_splitter=text_splitter.get_child_splitter(),
+                    base_docs=text_chunks,
+                )
 
                 # create conversation chain
                 st.session_state.conversation = get_conversation_chain(retriever)
