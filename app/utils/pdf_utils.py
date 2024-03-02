@@ -1,22 +1,17 @@
-from PyPDF2 import PdfReader
 from langchain.docstore.document import Document
+import pdftotext
 
 
 class MyPDF:
-    def __init__(self, pdf):
-        self.pdf = pdf
+    def __init__(self, pdfs):
+        self.pdfs = pdfs
 
     def get_pdf_docs(self):
         docs = []
-        for pdf in self.pdf:
-            pdf_reader = PdfReader(pdf)
+        for pdf in self.pdfs:
+            pdf = pdftotext.PDF(pdf)
             i = 1
-            for page in pdf_reader.pages:
-                docs.append(
-                    Document(
-                        page_content=page.extract_text().replace("\n", " "),
-                        metadata={"page": i},
-                    )
-                )
+            for page in pdf:
+                docs.append(Document(page_content=page, metadata={"page": i}))
                 i += 1
         return docs
