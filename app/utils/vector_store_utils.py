@@ -4,6 +4,8 @@ from langchain.embeddings.huggingface import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.faiss import FAISS
 from langchain.retrievers import ParentDocumentRetriever
 from langchain.storage import InMemoryStore
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 
 class MyVectorStore:
@@ -43,3 +45,17 @@ class MyVectorStore:
         parent_document_retriever.add_documents(base_docs)
 
         return parent_document_retriever
+
+    def get_history_aware_retriever(self, llm, retriever):
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("user", "{input}"),
+                (
+                    "user",
+                    "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation",
+                ),
+            ]
+        )
+        retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
+        return retriever_chain
