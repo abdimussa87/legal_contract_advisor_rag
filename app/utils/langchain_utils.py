@@ -18,10 +18,14 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 
 class MyLangChain:
 
-    def __init__(self) -> None:
+    def __init__(self, pdf_reader, text_splitter, vector_store) -> None:
 
         # setting up LangSmith observability
         self.setup_lang_smith()
+
+        self.pdf_reader = pdf_reader
+        self.text_splitter = text_splitter
+        self.vector_store = vector_store
 
         template = """Answer the question (by giving reference to the context you used) based only on the following context:
         {context}
@@ -32,6 +36,25 @@ class MyLangChain:
 
         local_llm = "mistral:instruct"
         self.llm = ChatOllama(model=local_llm)
+
+    def setup_pdf_reader(self):
+        docs = self.pdf_reader.get_pdf_docs()
+        return docs
+
+    def setup_text_splitter(self, docs):
+        chunks = self.text_splitter.get_text_chunks(docs)
+        return chunks
+
+    def setup_vector_store(self, chunks):
+        print("called embed ")
+        self.vector_store.embed_docs(chunks)
+
+    def setup_conversation_aware_retriever(self):
+        conversation_aware_retriever = self.vector_store.get_history_aware_retriever(
+            llm=self.llm,
+            retriever=self.vector_store.get_retriever(),
+        )
+        return conversation_aware_retriever
 
     def generate_answer_chain(self, retriever):
         chain = (

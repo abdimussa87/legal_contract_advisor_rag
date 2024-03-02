@@ -1,35 +1,19 @@
 import streamlit as st
 from dotenv import load_dotenv
-from htmlTemplates import css, bot_template
-
 from utils.pdf_utils import MyPDF
 from utils.text_splitter_utils import MyTextSplitter
 from utils.vector_store_utils import MyVectorStore
 from utils.langchain_utils import MyLangChain
 from langchain_core.messages import AIMessage, HumanMessage
 
-load_dotenv(override=True)
-
-
-def get_conversation_chain(retriever):
-    my_lang_chain = MyLangChain()
-    return my_lang_chain.get_conversational_chain(retriever)
-
 
 def handle_userinput(user_question):
     # a path which may happen if the document has already been embedded
-    if not st.session_state.conversation_chain:
-        my_vector_store = MyVectorStore()
-        try:
-            retriever = my_vector_store.get_retriever()
-        except Exception:
-            st.error(f"Please enter document")
-            return
+    if not st.session_state.conv_chain:
+        st.error(f"Please enter your document(s)")
+        return
 
-        # create conversation chain
-        st.session_state.conversation_chain = get_conversation_chain(retriever)
-
-    result = st.session_state.conversation_chain.invoke(
+    result = st.session_state.conv_chain.invoke(
         {
             "chat_history": st.session_state.chat_history,
             "input": user_question,
@@ -41,9 +25,9 @@ def handle_userinput(user_question):
 
 
 def setup_initial_session_state():
-    # conversation_chain session state
-    if "conversation_chain" not in st.session_state:
-        st.session_state.conversation_chain = None
+    # conv_chain session state
+    if "conv_chain" not in st.session_state:
+        st.session_state.conv_chain = None
 
     # session state
     if "chat_history" not in st.session_state:
@@ -53,8 +37,11 @@ def setup_initial_session_state():
 
 
 def main():
-    load_dotenv()
+    # load environment variables
+    load_dotenv(override=True)
+
     st.set_page_config(page_title="Contract Ai", page_icon="🤖")
+
     setup_initial_session_state()
 
     st.header("Answer anything relating to your contract")
@@ -78,34 +65,30 @@ def main():
         )
         if st.button("Process"):
             with st.spinner("Processing"):
-                # get pdf text
-                pdf = MyPDF(pdfs=pdf_docs)
-                docs = pdf.get_pdf_docs()
-
-                # get the text chunks
-                text_splitter = MyTextSplitter(docs)
-                text_chunks = text_splitter.get_text_chunks()
-
+                # initialize pdf reader
+                pdf_reader = MyPDF(pdfs=pdf_docs)
+                text_splitter = MyTextSplitter()
                 # create vector store
                 my_vector_store = MyVectorStore()
-                my_vector_store.embed_docs(text_chunks)
-                print("called embed ")
 
-                # retriever = my_vector_store.get_retriever()
+                my_lang_chain = MyLangChain(pdf_reader, text_splitter, my_vector_store)
+                docs = my_lang_chain.setup_pdf_reader()
 
-                # retriever = my_vector_store.get_parent_document_retriever(
-                #     parent_splitter=text_splitter.get_parent_splitter(),
-                #     child_splitter=text_splitter.get_child_splitter(),
-                #     base_docs=text_chunks,
-                # )
+                # get the text chunks
+                text_chunks = my_lang_chain.setup_text_splitter(docs)
 
-                retriever = my_vector_store.get_history_aware_retriever(
-                    llm=MyLangChain().llm,
-                    retriever=my_vector_store.get_retriever(),
+                # embed the text chunks
+                my_lang_chain.setup_vector_store(text_chunks)
+
+                # get the retriever
+                conversation_aware_retriever = (
+                    my_lang_chain.setup_conversation_aware_retriever()
                 )
 
                 # create conversation_chain
-                st.session_state.conversation_chain = get_conversation_chain(retriever)
+                st.session_state.conv_chain = my_lang_chain.get_conversational_chain(
+                    conversation_aware_retriever
+                )
 
 
 if __name__ == "__main__":

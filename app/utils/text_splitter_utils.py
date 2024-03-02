@@ -2,14 +2,14 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 class MyTextSplitter:
-    def __init__(self, docs):
-        self.docs = docs
+    def __init__(self):
+        pass
 
-    def get_text_chunks(self):
+    def get_text_chunks(self, docs):
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000, chunk_overlap=200
         )
-        chunks = text_splitter.split_documents(self.docs)
+        chunks = text_splitter.split_documents(docs)
         return chunks
 
     def get_parent_splitter(self):
